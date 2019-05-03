@@ -7,6 +7,8 @@ const BbPromise = require('bluebird');
 const logError = require('../lib/classes/Error').logError;
 const uuid = require('uuid');
 const initializeErrorReporter = require('../lib/utils/sentry').initializeErrorReporter;
+const semver = require('semver');
+const packageJson = require('../package.json');
 
 Error.stackTraceLimit = Infinity;
 
@@ -26,6 +28,16 @@ const invocationId = uuid.v4();
 
 // boot up error reporting via sentry before anything
 (() => initializeErrorReporter(invocationId).then(() => {
+  const requiredVersion = packageJson.engines.node;
+  const nodeVersion = process.version;
+  if (!semver.satisfies(nodeVersion, requiredVersion)) {
+    const msg = [
+      `Serverless Framework requires at least Node.js version ${requiredVersion}. `,
+      `You use version ${nodeVersion}.`,
+    ].join('');
+    throw new Error(msg);
+  }
+
   if (process.argv[2] === 'completion') {
     return autocomplete();
   }
